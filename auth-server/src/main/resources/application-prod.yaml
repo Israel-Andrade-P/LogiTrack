@@ -1,7 +1,7 @@
 ACTIVE_PROFILE: prod
 
-PRIVATE_KEY: "private.key"
-PUBLIC_KEY: "public_key"
+PRIVATE_KEY: 
+PUBLIC_KEY:
 
 POSTGRES_USERNAME: zel
 POSTGRES_PASSWORD: cheese

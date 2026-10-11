@@ -36,3 +36,7 @@ eureka:
 ui:
   app:
     url: ${UI_URL}
+
+keys:
+  private: ${PRIVATE_KEY}
+  public: ${PUBLIC_KEY}
