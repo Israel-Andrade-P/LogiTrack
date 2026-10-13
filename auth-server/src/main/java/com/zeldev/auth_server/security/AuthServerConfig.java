@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class AuthServerConfig {
+  private final JwtConfiguration jwtConfiguration;
   @Value("${ui.app.url}")
   private String redirectUri;
 
@@ -68,9 +69,9 @@ public class AuthServerConfig {
 
   @Bean
   public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator() {
-    var jwtGenerator = UserJwtGenerator.init(new NimbusJwtEncoder(null));
+    var jwtGenerator = UserJwtGenerator.init(new NimbusJwtEncoder(jwtConfiguration.jwkSource()));
     jwtGenerator.setJwtCustomizer(customizer());
-    OAuth2TokenGenerator<OAuth2RefreshToken> refreshTokenGenerator = null;
+    OAuth2TokenGenerator<OAuth2RefreshToken> refreshTokenGenerator = new ClientOAuth2RefreshTokenGenerator();
 
     return new DelegatingOAuth2TokenGenerator(jwtGenerator, refreshTokenGenerator);
   }

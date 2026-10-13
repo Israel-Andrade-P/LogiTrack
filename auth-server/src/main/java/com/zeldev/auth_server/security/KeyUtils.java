@@ -1,10 +1,12 @@
 package com.zeldev.auth_server.security;
 
+import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.EncodedKeySpec;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.nimbusds.jose.jwk.RSAKey;
+import com.zeldev.auth_server.exception.ApiException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +34,7 @@ public class KeyUtils {
   private String publicKey;
 
   public RSAKey getRSAKeyPair() {
-    return generateRSAKeyPair(privateKey, publicKey)
+    return generateRSAKeyPair(privateKey, publicKey);
   }
 
   private RSAKey generateRSAKeyPair(String privateKeyName, String publicKeyName) {
@@ -63,9 +66,31 @@ public class KeyUtils {
         log.error(e.getMessage());
         throw new ApiException(e.getMessage());
       }
-    }
+    } else {
+      if (activeProfile.equalsIgnoreCase("prod")) {
+        throw new ApiException("Keys don't exist in prod");
+      }
 
-    return null;
+      log.info("Generating new public and private keys {}, {}", publicKeyName, privateKeyName);
+      try {
+        var keyPairGenerator = KeyPairGenerator.getInstance(RSA);
+        keyPairGenerator.initialize(2048);
+        keyPair = keyPairGenerator.generateKeyPair();
+        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        try (var fos = new FileOutputStream(keysDirectory.resolve(privateKeyName).toFile())) {
+          PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyPair.getPrivate().getEncoded());
+          fos.write(keySpec.getEncoded());
+        }
+        try (var fos = new FileOutputStream(keysDirectory.resolve(publicKeyName).toFile())) {
+          X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyPair.getPublic().getEncoded());
+          fos.write(keySpec.getEncoded());
+          return new RSAKey.Builder(publicKey).privateKey(privateKey).keyID(UUID.randomUUID().toString()).build();
+        }
+      } catch (Exception e) {
+        throw new ApiException(e.getMessage());
+      }
+    }
   }
 
   private void verifyKeysDirectory(Path keysDirectory) {
