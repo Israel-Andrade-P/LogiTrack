@@ -61,6 +61,10 @@ public class AuthServerConfig {
         .cors(Customizer.withDefaults())
         .oauth2AuthorizationServer(authServer -> authServer
             .registeredClientRepository(registeredClientRepository)
+                .clientAuthentication(clientAuth -> {
+                  clientAuth.authenticationConverter(new ClientRefreshTokenAuthenticationConverter());
+                  clientAuth.authenticationProvider(new ClientAuthenticationProvider(registeredClientRepository));
+                })
             .tokenGenerator(tokenGenerator())
             .oidc(Customizer.withDefaults()));
 
