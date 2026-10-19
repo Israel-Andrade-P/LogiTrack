@@ -1,0 +1,52 @@
+- Keep responsibilities clear: the auth service owns user accounts, password verification, token issuance, and eventually token revocation. Other services should validate tokens, not query its user database on every request.
+- Store passwords safely: hash them with Argon2id or bcrypt using a suitable work factor. Never store plaintext passwords or reversible encryption.
+- Use JWTs deliberately: keep access tokens short-lived and include only necessary claims, such as sub (user ID), iss, aud, iat, and exp. Avoid putting sensitive profile data in them.
+- Plan for logout and revocation: signed JWTs usually remain valid until expiration. Short access-token lifetimes plus refresh-token rotation can make sessions manageable; store refresh tokens hashed so they can be revoked.
+- Validate tokens consistently: services should verify the signature, allowed algorithm, issuer, audience, and expiry. Don’t trust a token just because it decodes.
+- Protect account flows: add rate limits to login and registration, generic login errors to reduce account discovery, email verification or a recovery flow if needed, and validation for user input.
+- Make database changes explicit: use migrations, unique constraints for normalized email/username, and transactions where account creation spans multiple records.
+- Design for key rotation: keep signing keys outside source control and use a kid header with a published key set if multiple services need to verify tokens.
+- Consider whether JWTs are needed: for a small system, opaque random session tokens can be simpler to revoke and operate. JWTs are most useful when services need to validate access locally without calling the auth service each time.
+
+A good starting flow is: registration → password hash → persist user; login → verify password → issue short-lived access token and refresh token; refresh → rotate refresh token; logout → revoke refresh token.
+
+For a microservice setup, RSA lets your auth service sign with a private key while other services validate with the public key:
+
+@Configuration
+class JwtConfig {
+    @Bean
+    JwtEncoder jwtEncoder(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
+        return NimbusJwtEncoder.withKeyPair(publicKey, privateKey).build();
+    }
+}
+
+Load those keys from secure configuration or a secret store; don’t generate a new key at every app startup, or previously issued tokens will stop validating after a restart.
+
+Then create the token after successful authentication:
+
+@Service
+class TokenService {
+    private final JwtEncoder encoder;
+
+    TokenService(JwtEncoder encoder) {
+        this.encoder = encoder;
+    }
+
+    String createAccessToken(String userId) {
+        Instant now = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("https://auth.example.com")
+                .subject(userId)
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(900)) // 15 minutes
+                .build();
+
+        return encoder.encode(JwtEncoderParameters.from(claims))
+                .getTokenValue();
+    }
+}
+
+JwtClaimsSet and JwtEncoderParameters are from org.springframework.security.oauth2.jwt. The signing key setup above uses Spring Security’s Nimbus-backed encoder. (NimbusJwtEncoder API (https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/oauth2/jwt/NimbusJwtEncoder.html))
+
+You’ll also need a JwtDecoder configured with the public key to validate tokens on protected requests. The services that consume the tokens can use that same public key.

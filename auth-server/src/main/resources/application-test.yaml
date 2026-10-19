@@ -1,0 +1,17 @@
+ACTIVE_PROFILE: test
+
+PRIVATE_KEY: "private.key"
+PUBLIC_KEY: "public_key"
+
+POSTGRES_USERNAME: zel
+POSTGRES_PASSWORD: cheese
+POSTGRES_HOST: localhost
+POSTGRES_PORT: 5432
+POSTGRES_DATABASE: my-db
+
+USER_NAME: admin
+PASSWORD: cheese
+
+UI_URL: http://localhost:3000
+
+SERVER_PORT: 9000
