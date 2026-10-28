@@ -18,7 +18,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.UUID;
 
 @Component
 @Slf4j
@@ -56,10 +55,7 @@ public class KeyUtils {
                 PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
                 RSAPrivateKey privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
 
-                var keyId = UUID.randomUUID().toString();
-                log.info("Key ID: {}", keyId);
-
-                return new RSAKey.Builder(publicKey).privateKey(privateKey).keyID(keyId).build();
+                return new RSAKey.Builder(publicKey).privateKey(privateKey).keyIDFromThumbprint().build();
             } catch (Exception e) {
                 log.error(e.getMessage());
                 throw new ApiException(e.getMessage());
@@ -83,7 +79,7 @@ public class KeyUtils {
                 try (var fos = new FileOutputStream(keysDirectory.resolve(publicKeyName).toFile())) {
                     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyPair.getPublic().getEncoded());
                     fos.write(keySpec.getEncoded());
-                    return new RSAKey.Builder(publicKey).privateKey(privateKey).keyID(UUID.randomUUID().toString()).build();
+                    return new RSAKey.Builder(publicKey).privateKey(privateKey).keyIDFromThumbprint().build();
                 }
             } catch (Exception e) {
                 throw new ApiException(e.getMessage());
