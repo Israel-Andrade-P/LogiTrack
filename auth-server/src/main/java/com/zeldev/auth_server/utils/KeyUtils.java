@@ -36,7 +36,7 @@ public class KeyUtils {
 
     private RSAKey generateRSAKeyPair(String privateKeyName, String publicKeyName) {
         KeyPair keyPair;
-        var keysDirectory = Paths.get("src", "main", "resources", "keys");
+        var keysDirectory = Paths.get("auth-server","src", "main", "resources", "keys");
         verifyKeysDirectory(keysDirectory);
 
         if (Files.exists(keysDirectory.resolve(privateKeyName)) && Files.exists(keysDirectory.resolve(publicKeyName))) {

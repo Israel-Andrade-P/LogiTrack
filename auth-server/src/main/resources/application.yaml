@@ -15,7 +15,7 @@ spring:
   jpa:
     database: POSTGRESQL
     open-in-view: false
-    database-platform: org.hibernate.dialect.PostgreSQL82Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: false
     show-sql: true
     hibernate:
@@ -23,7 +23,7 @@ spring:
     properties:
       hibernate:
         default-schema: ${POSTGRES_DATABASE}
-        dialect: org.hibernate.dialect.PostgreSQL82Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format-sql: true
 
 eureka:

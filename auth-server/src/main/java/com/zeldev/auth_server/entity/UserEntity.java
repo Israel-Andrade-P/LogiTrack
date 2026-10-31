@@ -33,4 +33,15 @@ public class UserEntity {
     private void generateUserId() {
         if (this.userId == null) this.userId = UUID.randomUUID().toString();
     }
+
+    @Override
+    public String toString() {
+        return "UserEntity{" +
+                "id=" + id +
+                ", userId='" + userId + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", role=" + role +
+                '}';
+    }
 }
