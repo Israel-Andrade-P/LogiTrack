@@ -21,6 +21,7 @@ public class JwtService {
         Instant now = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("http://auth.zeldev.com")
                 .subject(email)
                 .issuedAt(now)
                 .expiresAt(now.plus(15, ChronoUnit.MINUTES))

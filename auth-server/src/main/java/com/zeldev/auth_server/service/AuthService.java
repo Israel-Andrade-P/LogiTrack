@@ -6,6 +6,7 @@ import com.zeldev.auth_server.request.LoginRequest;
 import com.zeldev.auth_server.request.UserRequest;
 import com.zeldev.auth_server.response.LoginResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,6 +18,7 @@ import static com.zeldev.auth_server.enumeration.RoleType.USER;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager manager;
@@ -25,7 +27,8 @@ public class AuthService {
 
 
     public void registerUser(UserRequest request) {
-        userRepository.save(toUserEntity(request));
+        var user = userRepository.save(toUserEntity(request));
+        log.info("Persisted user {}", user);
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -33,8 +36,11 @@ public class AuthService {
         var authenticated = manager.authenticate(authRequest);
         var principal = (UserDetails) authenticated.getPrincipal();
         var roles = principal.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+        var email = principal.getUsername();
 
-        var token = jwtService.generateAccessToken(principal.getUsername(), roles);
+        var token = jwtService.generateAccessToken(email, roles);
+
+        log.info("Token: {}, created for user: {}", token, email);
         return new LoginResponse(token, "Bearer");
     }
 

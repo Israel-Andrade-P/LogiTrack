@@ -4,6 +4,8 @@ import com.zeldev.auth_server.enumeration.RoleType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
@@ -26,4 +28,9 @@ public class UserEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RoleType role;
+
+    @PrePersist
+    private void generateUserId() {
+        if (this.userId == null) this.userId = UUID.randomUUID().toString();
+    }
 }

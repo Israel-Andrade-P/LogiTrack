@@ -14,5 +14,4 @@ public record LoginRequest(
         @NotNull(message = "Password field is required")
         @Size(min = 4, max = 30, message = "Password must be between 4 to 30 characters")
         String password
-) {
-}
+) {}
