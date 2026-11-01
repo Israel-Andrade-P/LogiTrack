@@ -1,0 +1,54 @@
+package com.zeldev.auth_service.service;
+
+import com.zeldev.auth_service.entity.UserEntity;
+import com.zeldev.auth_service.repository.UserRepository;
+import com.zeldev.auth_service.request.LoginRequest;
+import com.zeldev.auth_service.request.UserRequest;
+import com.zeldev.auth_service.response.LoginResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import static com.zeldev.auth_service.enumeration.RoleType.USER;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AuthService {
+    private final UserRepository userRepository;
+    private final AuthenticationManager manager;
+    private final PasswordEncoder encoder;
+    private final JwtService jwtService;
+
+
+    public void registerUser(UserRequest request) {
+        var user = userRepository.save(toUserEntity(request));
+        log.info("Persisted user {}", user);
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        var authRequest = UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.password());
+        var authenticated = manager.authenticate(authRequest);
+        var principal = (UserDetails) authenticated.getPrincipal();
+        var roles = principal.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+        var email = principal.getUsername();
+
+        var token = jwtService.generateAccessToken(email, roles);
+
+        log.info("Token: {}, created for user: {}", token, email);
+        return new LoginResponse(token, "Bearer");
+    }
+
+    private UserEntity toUserEntity(UserRequest request) {
+        return UserEntity.builder()
+                .email(request.email())
+                .password(encoder.encode(request.password()))
+                .role(USER)
+                .build();
+    }
+}

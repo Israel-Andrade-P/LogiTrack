@@ -1,0 +1,47 @@
+package com.zeldev.auth_service.entity;
+
+import com.zeldev.auth_service.enumeration.RoleType;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.UUID;
+
+import static jakarta.persistence.GenerationType.IDENTITY;
+
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserEntity {
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+    @Column(nullable = false, unique = true)
+    private String userId;
+    @Column(nullable = false, unique = true)
+    private String email;
+    @Column(nullable = false)
+    private String password;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private RoleType role;
+
+    @PrePersist
+    private void generateUserId() {
+        if (this.userId == null) this.userId = UUID.randomUUID().toString();
+    }
+
+    @Override
+    public String toString() {
+        return "UserEntity{" +
+                "id=" + id +
+                ", userId='" + userId + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", role=" + role +
+                '}';
+    }
+}
