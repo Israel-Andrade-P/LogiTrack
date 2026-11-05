@@ -1,3 +1,14 @@
 spring:
   application:
     name: order-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9000/jwk/keys
+security:
+  jwt:
+    issuer: http://auth.zeldev.com
+    audience: order-service
+server:
+  port: 9001

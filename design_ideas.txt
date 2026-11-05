@@ -50,3 +50,33 @@ class TokenService {
 JwtClaimsSet and JwtEncoderParameters are from org.springframework.security.oauth2.jwt. The signing key setup above uses Spring Security’s Nimbus-backed encoder. (NimbusJwtEncoder API (https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/oauth2/jwt/NimbusJwtEncoder.html))
 
 You’ll also need a JwtDecoder configured with the public key to validate tokens on protected requests. The services that consume the tokens can use that same public key.
+
+TRACKING SERVICE:
+A history event should capture what changed, which order it belongs to, and when it happened. For example:
+
+{
+  "eventId": "uuid",
+  "orderId": "12345",
+  "eventType": "ORDER_STATUS_CHANGED",
+  "occurredAt": "2026-11-05T14:32:10Z",
+  "actorId": "user-789",
+  "fromStatus": "PAID",
+  "toStatus": "PROCESSING",
+  "reason": null,
+  "metadata": {
+    "source": "order-service"
+  }
+}
+
+Useful fields:
+
+- eventId: unique ID for deduplication when events are retried.
+- orderId: stable ID for retrieving an order’s history.
+- eventType: a clear event name, such as ORDER_CREATED, ORDER_STATUS_CHANGED, or ORDER_CANCELLED.
+- occurredAt: when the change happened, ideally UTC.
+- actorId: user or service that initiated it, when known.
+- Change details: for a status transition, store both the previous and new status. For other event types, include only the relevant changed fields.
+- reason: optional explanation, such as a cancellation reason.
+- metadata: optional correlation or source details useful for tracing.
+
+Persist only what tracking needs; avoid copying sensitive customer data or the entire order into every event. Keep the event record append-only, and make the tracking consumer idempotent using eventId.
