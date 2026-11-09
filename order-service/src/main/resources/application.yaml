@@ -1,14 +1,33 @@
 spring:
   application:
     name: order-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${ORDER_DATABASE}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      connection-test-query: SELECT 1
+  jpa:
+    database: POSTGRESQL
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default-schema: ${ORDER_DATABASE}
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format-sql: true
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:9000/jwk/keys
+          jwk-set-uri: http://localhost:${AUTH_SERVER_PORT}/jwk/keys
 security:
   jwt:
     issuer: http://auth.zeldev.com
     audience: order-service
 server:
-  port: 9001
+  port: ${ORDER_SERVER_PORT}

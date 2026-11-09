@@ -7,7 +7,7 @@ spring:
   profiles:
     active: ${ACTIVE_PROFILE:dev}
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${AUTH_DATABASE}
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
     hikari:
@@ -22,7 +22,7 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        default-schema: ${POSTGRES_DATABASE}
+        default-schema: ${AUTH_DATABASE}
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format-sql: true
 
@@ -32,6 +32,9 @@ eureka:
   client:
     service-url:
       defaultZone: http://${USER_NAME}:${PASSWORD}@localhost:5002/eureka/
+
+server:
+  port: ${AUTH_SERVER_PORT}
 
 keys:
   private: ${PRIVATE_KEY}
