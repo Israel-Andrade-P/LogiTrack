@@ -28,7 +28,7 @@ public class AuthService {
 
     public void registerUser(UserRequest request) {
         var user = userRepository.save(toUserEntity(request));
-        log.info("Persisted user {}", user);
+        log.info("Persisted user {}", user.getEmail());
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -36,11 +36,11 @@ public class AuthService {
         var authenticated = manager.authenticate(authRequest);
         var principal = (UserDetails) authenticated.getPrincipal();
         var roles = principal.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-        var email = principal.getUsername();
+        var userId = principal.getUsername();
 
-        var token = jwtService.generateAccessToken(email, roles);
+        var token = jwtService.generateAccessToken(userId, roles);
 
-        log.info("Token: {}, created for user: {}", token, email);
+        log.info("Token created for user: {}", userId);
         return new LoginResponse(token, "Bearer");
     }
 

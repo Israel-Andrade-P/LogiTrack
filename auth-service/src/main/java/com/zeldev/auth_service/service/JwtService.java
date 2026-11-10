@@ -17,13 +17,13 @@ import java.util.List;
 public class JwtService {
     private final JwtEncoder jwtEncoder;
 
-    public String generateAccessToken(String email, List<String> roles) {
+    public String generateAccessToken(String userId, List<String> roles) {
         Instant now = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("http://auth.zeldev.com")
                 .audience(List.of("order-service"))
-                .subject(email)
+                .subject(userId)
                 .issuedAt(now)
                 .expiresAt(now.plus(15, ChronoUnit.MINUTES))
                 .claim("roles", roles)

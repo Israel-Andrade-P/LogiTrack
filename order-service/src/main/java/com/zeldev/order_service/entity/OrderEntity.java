@@ -6,9 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.UUID;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -53,4 +51,9 @@ public class OrderEntity {
 
     @Version
     private long version;
+
+    @PrePersist
+    public void generateId() {
+        if (this.publicId == null) this.publicId = UUID.randomUUID().toString();
+    }
 }
