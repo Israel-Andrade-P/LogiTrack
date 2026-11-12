@@ -25,6 +25,12 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: http://localhost:${AUTH_SERVER_PORT}/jwk/keys
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
 security:
   jwt:
     issuer: http://auth.zeldev.com
