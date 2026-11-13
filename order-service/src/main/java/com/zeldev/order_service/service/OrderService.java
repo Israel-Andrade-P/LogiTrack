@@ -1,19 +1,19 @@
 package com.zeldev.order_service.service;
 
 import com.zeldev.order_service.entity.OrderEntity;
-import com.zeldev.order_service.event.OrderCreatedEvent;
+import com.zeldev.order_service.exception.OrderNotFoundException;
 import com.zeldev.order_service.publisher.OrderEventPublisher;
 import com.zeldev.order_service.repository.OrderRepository;
 import com.zeldev.order_service.request.OrderRequest;
 import com.zeldev.order_service.response.OrderResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-
-import static com.zeldev.order_service.enumeration.OrderStatus.CREATED;
+import static com.zeldev.order_service.utils.OrderEvent.createEvent;
+import static com.zeldev.order_service.utils.OrderMapper.toEntity;
+import static com.zeldev.order_service.utils.OrderMapper.toResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -37,37 +37,11 @@ public class OrderService {
         return toResponse(entity);
     }
 
-    private OrderEntity toEntity(OrderRequest request, String userId) {
-        return OrderEntity.builder()
-                .customerId(userId)
-                .pickupAddress(request.pickupAddress())
-                .deliveryAddress(request.deliveryAddress())
-                .packageDescription(request.packageDescription())
-                .packageWeight(request.packageWeight())
-                .status(CREATED)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
+    public OrderResponse getOrder(String orderId, String userId) {
+        return toResponse(getOrderByIdAndCustomer(orderId, userId));
     }
 
-    private OrderResponse toResponse(OrderEntity entity) {
-        return OrderResponse.builder()
-                .orderId(entity.getPublicId())
-                .status(entity.getStatus())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .build();
-    }
-
-    private OrderCreatedEvent createEvent(OrderEntity entity) {
-        return OrderCreatedEvent.builder()
-                .orderId(entity.getPublicId())
-                .customerId(entity.getCustomerId())
-                .pickupAddress(entity.getPickupAddress())
-                .deliveryAddress(entity.getDeliveryAddress())
-                .packageDescription(entity.getPackageDescription())
-                .packageWeight(entity.getPackageWeight())
-                .createdAt(entity.getCreatedAt())
-                .build();
+    private OrderEntity getOrderByIdAndCustomer(String orderId, String customerId) {
+        return orderRepository.findByPublicIdAndCustomerId(orderId, customerId).orElseThrow(() -> new OrderNotFoundException("Order not found"));
     }
 }

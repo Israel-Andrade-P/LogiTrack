@@ -10,7 +10,7 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - logi-postgres-data:/var/lib/postgresql/data
     configs:
       - source: create_order_database
         target: /docker-entrypoint-initdb.d/01-create-order-database.sql
@@ -20,13 +20,13 @@ services:
       timeout: 5s
       retries: 5
 
-  mongodb:
-    image: mongo:8
-    container_name: logi-mongo
-    ports:
-      - "${MONGO_PORT}:27017"
-    volumes:
-      - mongodb-data:/data/db
+#  mongodb:
+#    image: mongo:8
+#    container_name: logi-mongo
+#    ports:
+#      - "${MONGO_PORT}:27017"
+#    volumes:
+#      - mongodb-data:/data/db
 
   kafka:
     image: apache/kafka:4.0.0
@@ -51,8 +51,8 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
 
 volumes:
-  postgres-data:
-  mongodb-data:
+  logi-postgres-data:
+  ##mongodb-data:
 
 configs:
   create_order_database:

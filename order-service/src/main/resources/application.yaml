@@ -31,6 +31,13 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
 
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://${USER_NAME}:${PASSWORD}@localhost:5002/eureka/
+
 security:
   jwt:
     issuer: http://auth.zeldev.com
