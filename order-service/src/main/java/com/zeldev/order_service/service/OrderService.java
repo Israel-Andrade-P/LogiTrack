@@ -6,9 +6,11 @@ import com.zeldev.order_service.publisher.OrderEventPublisher;
 import com.zeldev.order_service.repository.OrderRepository;
 import com.zeldev.order_service.request.OrderRequest;
 import com.zeldev.order_service.response.OrderResponse;
+import com.zeldev.order_service.utils.OrderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import static com.zeldev.order_service.utils.OrderEvent.createEvent;
@@ -41,7 +43,19 @@ public class OrderService {
         return toResponse(getOrderByIdAndCustomer(orderId, userId));
     }
 
+    public Page<OrderResponse> getOrdersByCustomer(String customerId, Pageable pageable) {
+        return orderRepository.findAllByCustomerId(customerId, pageable).map(OrderMapper::toResponse);
+    }
+
+    public Page<OrderResponse> getOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(OrderMapper::toResponse);
+    }
+
     private OrderEntity getOrderByIdAndCustomer(String orderId, String customerId) {
         return orderRepository.findByPublicIdAndCustomerId(orderId, customerId).orElseThrow(() -> new OrderNotFoundException("Order not found"));
+    }
+
+    public OrderResponse deleteOrder(String orderId, String subject) {
+        return null;
     }
 }
