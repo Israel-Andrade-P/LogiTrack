@@ -1,6 +1,8 @@
 package com.zeldev.order_service.controller;
 
+import com.zeldev.order_service.enumeration.OrderStatus;
 import com.zeldev.order_service.request.OrderRequest;
+import com.zeldev.order_service.request.OrderStatusRequest;
 import com.zeldev.order_service.response.OrderResponse;
 import com.zeldev.order_service.service.OrderService;
 import jakarta.validation.Valid;
@@ -50,8 +52,14 @@ public class OrderController {
         return ResponseEntity.status(OK).body(orderService.getOrders(pageable));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<OrderResponse> deleteOrder(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") String orderId) {
-        return ResponseEntity.status(OK).body(orderService.deleteOrder(orderId, jwt.getSubject()));
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") String orderId) {
+        return ResponseEntity.status(OK).body(orderService.cancelOrder(orderId, jwt.getSubject()));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOOR_DASHER')")
+    public ResponseEntity<OrderResponse> updateStatus(@PathVariable("id") String orderId, @RequestBody @Valid OrderStatusRequest request) {
+        return ResponseEntity.status(OK).body(orderService.transitionOrder(orderId, request.status()));
     }
 }
