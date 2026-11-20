@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: delivery-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${DELIVERY_DATABASE}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      connection-test-query: SELECT 1
+  jpa:
+    database: POSTGRESQL
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default-schema: ${DELIVERY_DATABASE}
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format-sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:${AUTH_SERVER_PORT}/jwk/keys
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: delivery-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        "[spring.json.value.default.type]": com.zeldev.delivery_service.event.OrderCreatedEvent
+        "[spring.json.trusted.packages]": com.zeldev.delivery_service.event
+        "[spring.json.use.type.headers]": false
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://${USER_NAME}:${PASSWORD}@localhost:5002/eureka/
+
+security:
+  jwt:
+    issuer: http://auth.zeldev.com
+    audience: delivery-service
+server:
+  port: ${DELIVERY_SERVER_PORT}

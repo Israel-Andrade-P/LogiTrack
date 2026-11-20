@@ -12,8 +12,8 @@ services:
     volumes:
       - logi-postgres-data:/var/lib/postgresql/data
     configs:
-      - source: create_order_database
-        target: /docker-entrypoint-initdb.d/01-create-order-database.sql
+      - source: create_service_databases
+        target: /docker-entrypoint-initdb.d/01-create-service-databases.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${AUTH_DATABASE}"]
       interval: 5s
@@ -55,6 +55,7 @@ volumes:
   ##mongodb-data:
 
 configs:
-  create_order_database:
+  create_service_databases:
     content: |
       CREATE DATABASE "${ORDER_DATABASE}";
+      CREATE DATABASE "${DELIVERY_DATABASE}";
