@@ -1,0 +1,4 @@
+CREATE TABLE couriers (
+    user_id VARCHAR(255) PRIMARY KEY,
+    available BOOLEAN NOT NULL DEFAULT TRUE
+);
