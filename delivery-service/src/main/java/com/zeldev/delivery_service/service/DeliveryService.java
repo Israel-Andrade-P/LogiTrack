@@ -4,11 +4,15 @@ import com.zeldev.delivery_service.entity.CourierEntity;
 import com.zeldev.delivery_service.entity.DeliveryEntity;
 import com.zeldev.delivery_service.enumeration.DeliveryStatus;
 import com.zeldev.delivery_service.event.OrderCreatedEvent;
+import com.zeldev.delivery_service.exception.DeliveryNotFoundException;
 import com.zeldev.delivery_service.exception.NoCourierAvailableException;
 import com.zeldev.delivery_service.repository.CourierRepository;
 import com.zeldev.delivery_service.repository.DeliveryRepository;
+import com.zeldev.delivery_service.response.DeliveryResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,17 +38,36 @@ public class DeliveryService {
 
         var deliveryStatus = ASSIGNED;
 
-        var courier = findAvailableCourier();
+        var optionalCourier = findAvailableCourier();
 
-        if (courier.isEmpty()) {
+        if (optionalCourier.isEmpty()) {
             deliveryStatus = PENDING_ASSIGNMENT;
             deliveryRepository.save(toEntity(event, null, deliveryStatus));
             return;
         }
 
-        deliveryRepository.save(toEntity(event, courier.get().getUserId(), deliveryStatus));
+        var courier = optionalCourier.get();
 
-        courier.get().setAvailable(false);
+        deliveryRepository.save(toEntity(event, courier.getUserId(), deliveryStatus));
+
+        courier.setAvailable(false);
+    }
+
+    @Transactional(readOnly = true)
+    public DeliveryResponse getCourierDelivery(String orderId, String courierId) {
+        var delivery = deliveryRepository.findByOrderIdAndCourierId(orderId, courierId)
+                .orElseThrow(() -> new DeliveryNotFoundException("Delivery not found"));
+        return toResponse(delivery);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliveryResponse> getCourierDeliveries(String courierId, Pageable pageable) {
+        return deliveryRepository.findAllByCourierId(courierId, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliveryResponse> getAllDeliveries(Pageable pageable) {
+        return deliveryRepository.findAll(pageable).map(this::toResponse);
     }
 
     private boolean checkByOrderId(String orderId) {
@@ -69,5 +92,19 @@ public class DeliveryService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
+    }
+
+    private DeliveryResponse toResponse(DeliveryEntity delivery) {
+        return new DeliveryResponse(
+                delivery.getOrderId(),
+                delivery.getCourierId(),
+                delivery.getPickupAddress(),
+                delivery.getDeliveryAddress(),
+                delivery.getPackageDescription(),
+                delivery.getPackageWeight(),
+                delivery.getStatus(),
+                delivery.getCreatedAt(),
+                delivery.getUpdatedAt()
+        );
     }
 }
