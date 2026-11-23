@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import static com.zeldev.auth_service.enumeration.RoleType.ADMIN;
 import static com.zeldev.auth_service.enumeration.RoleType.USER;
 
 @Service

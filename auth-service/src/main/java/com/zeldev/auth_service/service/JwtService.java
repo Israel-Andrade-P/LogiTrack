@@ -22,7 +22,7 @@ public class JwtService {
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("http://auth.zeldev.com")
-                .audience(List.of("order-service"))
+                .audience(List.of("order-service", "delivery-service"))
                 .subject(userId)
                 .issuedAt(now)
                 .expiresAt(now.plus(15, ChronoUnit.MINUTES))
