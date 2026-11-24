@@ -1,3 +1,36 @@
 spring:
   application:
     name: tracking-service
+  mongodb:
+    uri: mongodb://${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${TRACKING_DATABASE:tracking-db}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:${AUTH_SERVER_PORT}/jwk/keys
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: tracking-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        "[spring.json.value.default.type]": com.zeldev.tracking_service.event.OrderCreatedEvent
+        "[spring.json.trusted.packages]": com.zeldev.tracking_service.event
+        "[spring.json.use.type.headers]": false
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://${USER_NAME}:${PASSWORD}@localhost:5002/eureka/
+
+security:
+  jwt:
+    issuer: http://auth.zeldev.com
+    audience: tracking-service
+
+server:
+  port: ${TRACKING_SERVER_PORT:9003}
