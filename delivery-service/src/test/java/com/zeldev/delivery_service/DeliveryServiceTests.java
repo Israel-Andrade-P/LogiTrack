@@ -2,9 +2,12 @@ package com.zeldev.delivery_service;
 
 import com.zeldev.delivery_service.entity.CourierEntity;
 import com.zeldev.delivery_service.entity.DeliveryEntity;
+import com.zeldev.delivery_service.enumeration.DeliveryStatus;
 import com.zeldev.delivery_service.event.OrderCreatedEvent;
+import com.zeldev.delivery_service.exception.DeliveryNotFoundException;
 import com.zeldev.delivery_service.repository.CourierRepository;
 import com.zeldev.delivery_service.repository.DeliveryRepository;
+import com.zeldev.delivery_service.response.DeliveryResponse;
 import com.zeldev.delivery_service.service.DeliveryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,15 +16,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static com.zeldev.delivery_service.enumeration.DeliveryStatus.ASSIGNED;
 import static com.zeldev.delivery_service.enumeration.DeliveryStatus.PENDING_ASSIGNMENT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
+import static org.springframework.data.domain.Sort.Direction.DESC;
 
 @ExtendWith(MockitoExtension.class)
 public class DeliveryServiceTests {
@@ -125,5 +134,90 @@ public class DeliveryServiceTests {
         assertThat(savedDelivery.getDeliveryAddress()).isEqualTo("Customer address");
         assertThat(savedDelivery.getCreatedAt()).isNotNull();
         assertThat(savedDelivery.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should get a delivery by it's id and courier id")
+    void getDeliveryTest() {
+        var delivery = DeliveryEntity.builder()
+                .orderId("order-123")
+                .courierId("courier-456")
+                .status(ASSIGNED)
+                .createdAt(Instant.parse("2026-01-01T12:00:00Z"))
+                .updatedAt(Instant.parse("2026-01-01T12:00:00Z"))
+                .build();
+
+        when(deliveryRepository.findByOrderIdAndCourierId("order-123", "courier-456"))
+                .thenReturn(Optional.of(delivery));
+
+        var response = deliveryService.getCourierDelivery("order-123", "courier-456");
+
+        assertThat(response.orderId()).isEqualTo("order-123");
+        assertThat(response.status()).isEqualTo(ASSIGNED);
+        assertThat(response.createdAt()).isEqualTo(delivery.getCreatedAt());
+
+        verify(deliveryRepository).findByOrderIdAndCourierId("order-123", "courier-456");
+    }
+
+    @Test
+    @DisplayName(("Throws DeliveryNotFoundException when id not found or delivery belongs to a different courier"))
+    void getDeliveryThrowTest() {
+        when(deliveryRepository.findByOrderIdAndCourierId("order-123", "courier-456"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> deliveryService.getCourierDelivery("order-123", "courier-456"))
+                .isInstanceOf(DeliveryNotFoundException.class)
+                .hasMessage("Delivery not found");
+    }
+
+    @Test
+    @DisplayName("Should return a page delivery entity filtered by courier id")
+    void getCourierDeliveriesTest() {
+        var pageable = PageRequest.of(0, 20, Sort.by(DESC, "createdAt"));
+        var delivery = deliveryWithStatus(ASSIGNED);
+        var deliveryPage = new PageImpl<>(List.of(delivery), pageable, 1);
+
+        when(deliveryRepository.findAllByCourierId("courier-123", pageable))
+                .thenReturn(deliveryPage);
+
+        var result = deliveryService.getCourierDeliveries("courier-123", pageable);
+
+        assertThat(result.getContent())
+                .extracting(DeliveryResponse::orderId)
+                .containsExactly("order-123");
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getNumber()).isZero();
+
+        verify(deliveryRepository).findAllByCourierId("courier-123", pageable);
+    }
+
+    @Test
+    @DisplayName("Should return a page delivery entity")
+    void getAllDeliveriesTest() {
+        var pageable = PageRequest.of(0, 20, Sort.by(DESC, "createdAt"));
+        var delivery = deliveryWithStatus(ASSIGNED);
+        var deliveryPage = new PageImpl<>(List.of(delivery), pageable, 1);
+
+        when(deliveryRepository.findAll(pageable)).thenReturn(deliveryPage);
+
+        var result = deliveryService.getAllDeliveries(pageable);
+
+        assertThat(result.getContent())
+                .extracting(DeliveryResponse::orderId)
+                .containsExactly("order-123");
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getNumber()).isZero();
+
+        verify(deliveryRepository).findAll(pageable);
+    }
+
+    private DeliveryEntity deliveryWithStatus(DeliveryStatus current) {
+        return DeliveryEntity.builder()
+                .orderId("order-123")
+                .courierId("courier-123")
+                .status(current)
+                .createdAt(Instant.parse("2026-01-01T12:00:00Z"))
+                .updatedAt(Instant.parse("2026-01-01T12:00:00Z"))
+                .build();
     }
 }
