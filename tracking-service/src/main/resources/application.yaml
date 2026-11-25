@@ -13,12 +13,6 @@ spring:
     consumer:
       group-id: tracking-service
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-      properties:
-        "[spring.json.value.default.type]": com.zeldev.tracking_service.event.OrderCreatedEvent
-        "[spring.json.trusted.packages]": com.zeldev.tracking_service.event
-        "[spring.json.use.type.headers]": false
 
 eureka:
   instance:

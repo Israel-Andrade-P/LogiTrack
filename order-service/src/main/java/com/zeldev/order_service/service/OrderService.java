@@ -18,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
+import static com.zeldev.order_service.enumeration.OrderStatus.*;
 import static com.zeldev.order_service.utils.OrderEvent.createEvent;
+import static com.zeldev.order_service.utils.OrderEvent.createStatusEvent;
 import static com.zeldev.order_service.utils.OrderMapper.toEntity;
 import static com.zeldev.order_service.utils.OrderMapper.toResponse;
 
@@ -38,8 +40,8 @@ public class OrderService {
         var entity = orderRepository.save(toEntity(request, userId));
         var event = createEvent(entity);
 
-        log.info("Publishing a event to kafka broker for order: {}", entity.getPublicId());
-        publisher.publish(event);
+        log.info("Publishing a order-created event to kafka broker for order: {}", entity.getPublicId());
+        publisher.publishCreatedEvent(event);
 
         return toResponse(entity);
     }
@@ -59,10 +61,17 @@ public class OrderService {
     @Transactional
     public OrderResponse cancelOrder(String orderId, String customerId) {
         var order = getOrderByIdAndCustomer(orderId, customerId);
-        if (order.getStatus() != OrderStatus.CREATED) throw new InvalidOrderStatusException("Only created orders can be cancelled");
+        if (order.getStatus() != CREATED) throw new InvalidOrderStatusException("Only created orders can be cancelled");
 
-        order.setStatus(OrderStatus.CANCELLED);
+        var previousStatus = order.getStatus();
+
+        order.setStatus(CANCELLED);
         order.setUpdatedAt(Instant.now());
+
+        var event = createStatusEvent(order, previousStatus);
+
+        log.info("Publishing a status-updated event to kafka broker for order: {}", order.getPublicId());
+        publisher.publishUpdatedEvent(event);
 
         return toResponse(order);
     }
@@ -78,17 +87,24 @@ public class OrderService {
             );
         }
 
+        var previousStatus = order.getStatus();
+
         order.setStatus(nextStatus);
         order.setUpdatedAt(Instant.now());
+
+        var event = createStatusEvent(order, previousStatus);
+
+        log.info("Publishing a status-updated event from transitionOrder to kafka broker for order: {}", order.getPublicId());
+        publisher.publishUpdatedEvent(event);
 
         return toResponse(order);
     }
 
     private boolean isValidTransition(OrderStatus current, OrderStatus next) {
         return switch (current) {
-            case CREATED -> next == OrderStatus.COLLECTED;
-            case COLLECTED -> next == OrderStatus.IN_TRANSIT;
-            case IN_TRANSIT -> next == OrderStatus.DELIVERED;
+            case CREATED -> next == COLLECTED;
+            case COLLECTED -> next == IN_TRANSIT;
+            case IN_TRANSIT -> next == DELIVERED;
             case DELIVERED, CANCELLED -> false;
         };
     }
