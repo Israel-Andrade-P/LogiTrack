@@ -3,7 +3,9 @@ package com.zeldev.delivery_service;
 import com.zeldev.delivery_service.entity.CourierEntity;
 import com.zeldev.delivery_service.entity.DeliveryEntity;
 import com.zeldev.delivery_service.enumeration.DeliveryStatus;
+import com.zeldev.delivery_service.enumeration.OrderStatus;
 import com.zeldev.delivery_service.event.OrderCreatedEvent;
+import com.zeldev.delivery_service.event.OrderStatusUpdateEvent;
 import com.zeldev.delivery_service.exception.DeliveryNotFoundException;
 import com.zeldev.delivery_service.repository.CourierRepository;
 import com.zeldev.delivery_service.repository.DeliveryRepository;
@@ -25,8 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static com.zeldev.delivery_service.enumeration.DeliveryStatus.ASSIGNED;
-import static com.zeldev.delivery_service.enumeration.DeliveryStatus.PENDING_ASSIGNMENT;
+import static com.zeldev.delivery_service.enumeration.DeliveryStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -210,6 +211,117 @@ public class DeliveryServiceTests {
 
         verify(deliveryRepository).findAll(pageable);
     }
+
+    @Test
+    @DisplayName(("Should update delivery status from assigned to cancelled"))
+    void cancelDeliveryTest() {
+        var event = OrderStatusUpdateEvent.builder()
+                .orderId("order-123")
+                .newStatus(OrderStatus.CANCELLED)
+                .occurredAt(Instant.now())
+                .build();
+        var delivery = deliveryWithStatus(ASSIGNED);
+        var courier = CourierEntity.builder()
+                .userId("courier-123")
+                .available(false)
+                .build();
+
+        when(deliveryRepository.findByOrderId("order-123")).thenReturn(Optional.of(delivery));
+        when(courierRepository.findById("courier-123")).thenReturn(Optional.of(courier));
+
+        deliveryService.cancelDelivery(event);
+
+        assertThat(delivery.getStatus()).isEqualTo(CANCELLED);
+        assertThat(delivery.getUpdatedAt()).isEqualTo(event.occurredAt());
+
+        assertThat(courier.isAvailable()).isTrue();
+
+        verify(deliveryRepository).findByOrderId("order-123");
+    }
+
+    @Test
+    @DisplayName(("Should ignore non-cancelled status events"))
+    void cancelDeliveryTest2() {
+        var event = OrderStatusUpdateEvent.builder()
+                .orderId("order-123")
+                .newStatus(OrderStatus.DELIVERED)
+                .occurredAt(Instant.now())
+                .build();
+
+        deliveryService.cancelDelivery(event);
+
+        verifyNoInteractions(deliveryRepository);
+        verifyNoInteractions(courierRepository);
+    }
+
+    @Test
+    @DisplayName(("Throws DeliveryNotFoundException when id not found"))
+    void cancelDeliveryThrowTest() {
+        var event = OrderStatusUpdateEvent.builder()
+                .orderId("order-123")
+                .newStatus(OrderStatus.CANCELLED)
+                .occurredAt(Instant.now())
+                .build();
+
+        when(deliveryRepository.findByOrderId("order-123"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> deliveryService.cancelDelivery(event))
+                .isInstanceOf(DeliveryNotFoundException.class)
+                .hasMessage("Delivery not found for order " + event.orderId());
+
+        verifyNoInteractions(courierRepository);
+    }
+
+    @Test
+    @DisplayName(("Delivery already cancelled should not flip courier availability"))
+    void cancelDeliveryTest3() {
+        var event = OrderStatusUpdateEvent.builder()
+                .orderId("order-123")
+                .newStatus(OrderStatus.CANCELLED)
+                .occurredAt(Instant.now())
+                .build();
+        var delivery = deliveryWithStatus(CANCELLED);
+
+        var originalUpdatedAt = delivery.getUpdatedAt();
+
+        when(deliveryRepository.findByOrderId("order-123")).thenReturn(Optional.of(delivery));
+
+        deliveryService.cancelDelivery(event);
+
+        assertThat(delivery.getStatus()).isEqualTo(CANCELLED);
+        assertThat(delivery.getUpdatedAt()).isEqualTo(originalUpdatedAt);
+
+        verifyNoInteractions(courierRepository);
+    }
+
+    @Test
+    @DisplayName(("Cancelling a pending delivery without an assigned courier"))
+    void cancelDeliveryTest4() {
+        var event = OrderStatusUpdateEvent.builder()
+                .orderId("order-123")
+                .newStatus(OrderStatus.CANCELLED)
+                .occurredAt(Instant.now())
+                .build();
+        var delivery = DeliveryEntity.builder()
+                .orderId("order-123")
+                .courierId(null)
+                .status(PENDING_ASSIGNMENT)
+                .createdAt(Instant.parse("2026-01-01T12:00:00Z"))
+                .updatedAt(Instant.parse("2026-01-01T12:00:00Z"))
+                .build();
+
+
+
+        when(deliveryRepository.findByOrderId("order-123")).thenReturn(Optional.of(delivery));
+
+        deliveryService.cancelDelivery(event);
+
+        assertThat(delivery.getStatus()).isEqualTo(CANCELLED);
+
+        verifyNoInteractions(courierRepository);
+    }
+
 
     private DeliveryEntity deliveryWithStatus(DeliveryStatus current) {
         return DeliveryEntity.builder()

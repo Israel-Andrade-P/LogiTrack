@@ -13,7 +13,10 @@ import org.springframework.stereotype.Component;
 public class OrderCreatedConsumer {
     private final DeliveryService deliveryService;
 
-    @KafkaListener(topics = "order-created")
+    @KafkaListener(
+            topics = "order-created",
+            containerFactory = "orderCreatedKafkaListenerContainerFactory"
+    )
     public void consume(OrderCreatedEvent event) {
         log.info("Consuming message from broker for order {}", event.orderId());
         deliveryService.createDelivery(event);

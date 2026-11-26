@@ -20,13 +20,13 @@ services:
       timeout: 5s
       retries: 5
 
-#  mongodb:
-#    image: mongo:8
-#    container_name: logi-mongo
-#    ports:
-#      - "${MONGO_PORT}:27017"
-#    volumes:
-#      - mongodb-data:/data/db
+  mongodb:
+    image: mongo:8
+    container_name: logi-mongo
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - mongodb-data:/data/db
 
   kafka:
     image: apache/kafka:4.0.0
@@ -52,7 +52,7 @@ services:
 
 volumes:
   logi-postgres-data:
-  ##mongodb-data:
+  mongodb-data:
 
 configs:
   create_service_databases:

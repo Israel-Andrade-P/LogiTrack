@@ -2,6 +2,8 @@ package com.zeldev.delivery_service.service;
 
 import com.zeldev.delivery_service.entity.CourierEntity;
 import com.zeldev.delivery_service.event.OrderCreatedEvent;
+import com.zeldev.delivery_service.event.OrderStatusUpdateEvent;
+import com.zeldev.delivery_service.enumeration.OrderStatus;
 import com.zeldev.delivery_service.exception.DeliveryNotFoundException;
 import com.zeldev.delivery_service.repository.CourierRepository;
 import com.zeldev.delivery_service.repository.DeliveryRepository;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 import static com.zeldev.delivery_service.enumeration.DeliveryStatus.ASSIGNED;
+import static com.zeldev.delivery_service.enumeration.DeliveryStatus.CANCELLED;
 import static com.zeldev.delivery_service.enumeration.DeliveryStatus.PENDING_ASSIGNMENT;
 import static com.zeldev.delivery_service.utils.DeliveryMapper.toEntity;
 import static com.zeldev.delivery_service.utils.DeliveryMapper.toResponse;
@@ -50,6 +53,24 @@ public class DeliveryService {
         deliveryRepository.save(toEntity(event, courier.getUserId(), deliveryStatus));
 
         courier.setAvailable(false);
+    }
+
+    @Transactional
+    public void cancelDelivery(OrderStatusUpdateEvent event) {
+        if (event.newStatus() != OrderStatus.CANCELLED) return;
+
+        var delivery = deliveryRepository.findByOrderId(event.orderId())
+                .orElseThrow(() -> new DeliveryNotFoundException("Delivery not found for order " + event.orderId()));
+
+        if (delivery.getStatus() == CANCELLED) return;
+
+        delivery.setStatus(CANCELLED);
+        delivery.setUpdatedAt(event.occurredAt());
+
+        if (delivery.getCourierId() != null) {
+            courierRepository.findById(delivery.getCourierId())
+                    .ifPresent(courier -> courier.setAvailable(true));
+        }
     }
 
     @Transactional(readOnly = true)

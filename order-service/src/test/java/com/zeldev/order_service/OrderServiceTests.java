@@ -94,7 +94,7 @@ public class OrderServiceTests {
         var inOrder = inOrder(orderRepository, publisher);
 
         inOrder.verify(orderRepository).save(entityCaptor.capture());
-        inOrder.verify(publisher).publish(eventCaptor.capture());
+        inOrder.verify(publisher).publishCreatedEvent(eventCaptor.capture());
 
         var savedInput = entityCaptor.getValue();
         assertThat(savedInput.getCustomerId()).isEqualTo("user-456");

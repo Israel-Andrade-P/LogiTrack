@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface DeliveryRepository extends JpaRepository<DeliveryEntity, Long> {
     boolean existsByOrderId(String orderId);
 
+    Optional<DeliveryEntity> findByOrderId(String orderId);
+
     Optional<DeliveryEntity> findByOrderIdAndCourierId(String orderId, String courierId);
 
     Page<DeliveryEntity> findAllByCourierId(String courierId, Pageable pageable);
